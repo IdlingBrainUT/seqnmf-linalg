@@ -3,6 +3,9 @@ name = "seqnmf-linalg"
 version = "0.1.0"
 authors = ["doraneko94 <shuntaro94@gmail.com>"]
 edition = "2018"
+license = "Apache-2.0"
+description = "Linalg functions used in seqNMF."
+repository = "https://github.com/IdlingBrainUT/seqnmf-linalg"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
