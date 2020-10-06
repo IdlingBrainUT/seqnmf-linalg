@@ -144,7 +144,7 @@ where
             let j = l - i;
             let active = l2 - j * (j + 1) / 2;
             Zip::from(&mut arr.slice_mut(s![.., t - i])).apply(|a| {
-                *a *= T::from(l2).unwrap() / T::from(active).unwrap();
+                *a *= T::from(l).unwrap() / T::from(i).unwrap();
             });
             Zip::from(&mut arr.slice_mut(s![.., i - 1])).apply(|a| {
                 *a *= T::from(l2).unwrap() / T::from(active).unwrap();
