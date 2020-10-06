@@ -80,6 +80,8 @@ where
 {
     fn convolution(&self, rhs: &Padded2D<T>) -> Array2<T>;
     fn transpose_convolution(&self, rhs: &Padded2D<T>) -> Array2<T>;
+    fn transpose_convolution_tail(&self, rhs: &Padded2D<T>) -> Array2<T>;
+    fn transpose_convolution_headtail(&self, rhs: &Padded2D<T>) -> Array2<T>;
 }
 
 impl<T> Tensor3D<T> for Array3<T>
@@ -118,10 +120,35 @@ where
                 *a += b;
             });
         }
+        arr
+    }
+
+    fn transpose_convolution_tail(&self, rhs: &Padded2D<T>) -> Array2<T> {
+        let l = self.shape()[2];
+        let t = rhs.raw_size.1;
+        let mut arr = self.transpose_convolution(rhs);
         for i in 1..l {
             Zip::from(&mut arr.slice_mut(s![.., t - i])).apply(|a| {
                 *a *= T::from(l).unwrap() / T::from(i).unwrap();
             })
+        }
+        arr
+    }
+
+    fn transpose_convolution_headtail(&self, rhs: &Padded2D<T>) -> Array2<T> {
+        let l = self.shape()[2];
+        let l2 = l * l;
+        let t = rhs.raw_size.1;
+        let mut arr = self.transpose_convolution(rhs);
+        for i in 1..l {
+            let j = l - i;
+            let active = l2 - j * (j + 1) / 2;
+            Zip::from(&mut arr.slice_mut(s![.., t - i])).apply(|a| {
+                *a *= T::from(l2).unwrap() / T::from(active).unwrap();
+            });
+            Zip::from(&mut arr.slice_mut(s![.., i - 1])).apply(|a| {
+                *a *= T::from(l2).unwrap() / T::from(active).unwrap();
+            });
         }
         arr
     }
