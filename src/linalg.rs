@@ -157,11 +157,13 @@ where
 pub trait Smooth {
     fn smooth(&self, l: usize) -> Self;
     fn smooth_x(rhs: &Self, l: usize) -> Self;
+    fn smooth_headtail(&self, l: usize) -> Self;
+    fn smooth_x_headtail(rhs: &Self, l: usize) -> Self;
 }
 
 impl<T> Smooth for Array2<T>
 where
-    T: Float + Clone,
+    T: Float + Clone + std::ops::MulAssign,
 {
     fn smooth(&self, l: usize) -> Self {
         let shape = self.shape();
@@ -211,6 +213,44 @@ where
                 .apply(|a, &b| {
                     *a = b;
                 });
+        }
+        arr
+    }
+
+    fn smooth_headtail(&self, l: usize) -> Self {
+        let mut arr = self.smooth(l);
+        let cols = self.shape()[1];
+        let mut active = l;
+        let all = T::from(2 * l - 1).unwrap();
+        for i in 0..l-1 {
+            Zip::from(&mut arr.slice_mut(s![.., i]))
+                .apply(|a| {
+                    *a *= all / T::from(active).unwrap();
+            });
+            Zip::from(&mut arr.slice_mut(s![.., cols - i - 1]))
+                .apply(|a| {
+                    *a *= all / T::from(active).unwrap();
+            });
+            active += 1;
+        }
+        arr
+    }
+
+    fn smooth_x_headtail(rhs: &Self, l: usize) -> Self {
+        let mut arr = Self::smooth_x(rhs, l);
+        let rows = rhs.shape()[0];
+        let mut active = l;
+        let all = T::from(2 * l - 1).unwrap();
+        for i in 0..l-1 {
+            Zip::from(&mut arr.slice_mut(s![i, ..]))
+                .apply(|a| {
+                    *a *= all / T::from(active).unwrap();
+            });
+            Zip::from(&mut arr.slice_mut(s![rows - i - 1, ..]))
+                .apply(|a| {
+                    *a *= all / T::from(active).unwrap();
+            });
+            active += 1;
         }
         arr
     }
@@ -339,6 +379,6 @@ pub fn reconstruction_cost<T: Float>(x_bar: &Array2<T>, x: &Array2<T>) -> T {
     frobenius_norm_2(&(x_bar - x))
 }
 
-pub fn xortho_cost<T: Float + 'static>(wtx: &Array2<T>, h: &Array2<T>, l: usize) -> T {
+pub fn xortho_cost<T: Float + std::ops::MulAssign + 'static>(wtx: &Array2<T>, h: &Array2<T>, l: usize) -> T {
     norm_1st_ij(&wtx.smooth(l).dot(&h.t()))
 }
