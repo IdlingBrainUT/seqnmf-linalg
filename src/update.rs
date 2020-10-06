@@ -31,10 +31,10 @@ pub fn update_wh<T>(
     let mut h_new = h.to_owned();
 
     let h_pad = Padded2D::from_arr(h, l);
-    let wtx_bar = w.transpose_convolution(&Padded2D::from_arr(x_bar, l));
+    let wtx_bar = w.transpose_convolution_headtail(&Padded2D::from_arr(x_bar, l));
 
     let one_eye = Array2::ones((k, k)) - Array2::eye(k);
-    let l_sh_one_eye = Array2::smooth_x(&h.t().dot(&one_eye), l) * lambda;
+    let l_sh_one_eye = Array2::smooth_x_headtail(&h.t().dot(&one_eye), l) * lambda;
     if update_w {
         for i in 0..l {
             let hlt = h_pad
@@ -57,7 +57,7 @@ pub fn update_wh<T>(
         }
     }
     if update_h {
-        let dh = wtx.to_owned() / (wtx_bar + one_eye.dot(&wtx.smooth(l)) * lambda + epsilon);
+        let dh = wtx.to_owned() / (wtx_bar + one_eye.dot(&wtx.smooth_headtail(l)) * lambda + epsilon);
         Zip::from(&mut h_new).and(&dh).apply(|a, &b| {
             *a *= b;
         });
